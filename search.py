@@ -198,6 +198,10 @@ def aStarSearch(problem, heuristic=nullHeuristic):
           nodeStack.push(x, cost + heuristic(state, problem))
     
   
+# Implement bug algorithms HERE
+
+
+
 # Abbreviations
 bfs = breadthFirstSearch
 dfs = depthFirstSearch
