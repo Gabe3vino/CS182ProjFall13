@@ -199,6 +199,84 @@ def aStarSearch(problem, heuristic=nullHeuristic):
     
   
 # Implement bug algorithms HERE
+def bug1(problem, heuristic=nullHeuristic):
+  '''Search the node that is closest to goal until we hit obstacle'''
+  actions = []
+  state = problem.getStartState()
+  left = Directions.LEFT
+  right = Directions.RIGHT
+
+  while True:
+    if problem.isGoalState(state):
+      return actions
+
+    bestDistance = float('Inf')
+    bestAction = Directions.STOP
+    bestState = state
+
+    children = problem.getSuccessors(state)
+
+    # If wall is blocking us, circumnavigate obstacle
+    if len(actions) > 0 and obstacleIsBlocking(actions[-1], children):
+      origPosition = state
+      closestPoint = (state,[])
+      closestDist = heuristic(state, problem)
+
+      # Turn left arbitrarily, always keep wall on right side
+      myRight = left[actions[-1]]
+      obstacleActions = []
+      firstTime = True
+
+      while state != origPosition or firstTime:
+        firstTime = False
+        children = problem.getSuccessors(state)
+        myRight = right[myRight]
+
+        # Turn right if we can, otherwise go straight
+        while obstacleIsBlocking(myRight, children):
+          myRight = left[myRight]
+
+        obstacleActions.append(myRight)
+        state = getChildWithAction(myRight, children)
+        currDist = heuristic(state, problem)
+        if currDist < closestDist:
+          closestPoint = (state, obstacleActions[:])
+
+
+      # Once we get back to original point of incidence travel back to closest point
+      state, halfwayActions = closestPoint
+      actions = actions + obstacleActions + halfwayActions
+
+    children = problem.getSuccessors(state)
+
+    for x in children:
+      child, action, cost = x
+
+      distance = heuristic(child, problem)
+      if distance < bestDistance:
+        bestDistance = distance
+        bestAction = action
+        bestState = child
+
+    actions.append(bestAction)
+    state = bestState
+    print actions
+
+
+def obstacleIsBlocking(prevAction, children):
+  possActions = []
+  for child in children:
+    _, action, _ = child
+    possActions.append(action)
+
+  return prevAction not in possActions
+
+def getChildWithAction(action, children):
+  for child in children:
+    state, childAction, _ = child
+    
+    if action is childAction:
+      return state
 
 
 

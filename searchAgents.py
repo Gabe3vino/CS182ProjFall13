@@ -146,7 +146,10 @@ class PositionSearchProblem(search.SearchProblem):
     self.walls = gameState.getWalls()
     self.startState = gameState.getPacmanPosition()
     if start != None: self.startState = start
-    self.goal = goal
+
+    # EDITED to make the goal the location of the only piece of food
+    food = gameState.getFood().asList()
+    self.goal = food[0]
     self.costFn = costFn
     #if warn and (gameState.getNumFood() != 1 or not gameState.hasFood(*goal)):
     #  print 'Warning: this does not look like a regular search maze'
