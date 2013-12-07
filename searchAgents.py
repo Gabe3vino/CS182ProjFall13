@@ -255,6 +255,7 @@ def euclideanHeuristic(position, problem, info={}):
   xy2 = problem.goal
   return ( (xy1[0] - xy2[0]) ** 2 + (xy1[1] - xy2[1]) ** 2 ) ** 0.5
 
+
 #####################################################
 # This portion is incomplete.  Time to write code!  #
 #####################################################

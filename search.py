@@ -13,6 +13,7 @@ by Pacman agents (in searchAgents.py).
 
 import util
 from game import Directions
+import math
 
 class SearchProblem:
   """
@@ -222,7 +223,7 @@ def bug1(problem, heuristic=nullHeuristic):
       closestPoint = (state,[])
       closestDist = heuristic(state, problem)
 
-      # Turn left arbitrarily, always keep wall on right side
+      # Turn left, always keep wall on right side (we could've done opposite)
       myRight = left[actions[-1]]
       obstacleActions = []
       firstTime = True
@@ -239,8 +240,10 @@ def bug1(problem, heuristic=nullHeuristic):
         obstacleActions.append(myRight)
         state = getChildWithAction(myRight, children)
         currDist = heuristic(state, problem)
+
         if currDist < closestDist:
           closestPoint = (state, obstacleActions[:])
+          closestDist = currDist
 
 
       # Once we get back to original point of incidence travel back to closest point
@@ -252,7 +255,7 @@ def bug1(problem, heuristic=nullHeuristic):
     for x in children:
       child, action, cost = x
 
-      distance = heuristic(child, problem)
+      distance = towardsGoalHeuristic(state, problem, child)
       if distance < bestDistance:
         bestDistance = distance
         bestAction = action
@@ -277,6 +280,18 @@ def getChildWithAction(action, children):
     
     if action is childAction:
       return state
+
+# Heuristic which gives highest value to closest direction towards goal, not a true heuristic
+def towardsGoalHeuristic(position, problem, child):
+  deltaX = child[0] - position[0]
+  deltaY = child[1] - position[1]
+  goalDeltaX = problem.goal[0] - position[0]
+  goalDeltaY = problem.goal[1] - position[1]
+
+  direction = math.atan2(deltaY, deltaX)
+  goalDirection = math.atan2(goalDeltaY, goalDeltaX)
+
+  return abs(direction-goalDirection)
 
 
 
