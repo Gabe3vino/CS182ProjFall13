@@ -201,7 +201,10 @@ def aStarSearch(problem, heuristic=nullHeuristic):
   
 # Implement bug algorithms HERE
 def bug1(problem, heuristic=nullHeuristic):
-  '''Search the node that is closest to goal until we hit obstacle'''
+  '''
+    Search the node that is closest to goal until we hit obstacle
+    To run: python pacman.py -l basicRobot0 -p SearchAgent -a fn=bug1,heuristic=manhattanHeuristic
+  '''
   actions = []
   state = problem.getStartState()
   left = Directions.LEFT
