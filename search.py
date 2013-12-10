@@ -359,7 +359,7 @@ def towardsGoalHeuristic(position, problem, child):
 
   return abs(direction-goalDirection)
 
-def mLine():
+def mLine(position, problem, child):
 
 
 # Abbreviations
