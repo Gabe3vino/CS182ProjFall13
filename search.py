@@ -283,6 +283,69 @@ def getChildWithAction(action, children):
     if action is childAction:
       return state
 
+def bug2(problem, heuristic=nullHeursitic):
+  actions = []
+  state = problem.getStartState()
+  left = Directions.LEFT
+  right = Directions.RIGHT
+
+  while True:
+    if problem.isGoalState(state):
+      return actions
+
+    bestDistance = float('Inf')
+    bestAction = Directions.STOP
+    bestState = state
+
+    children = problem.getSuccessors(state)
+
+    # If wall is blocking us, circumnavigate obstacle
+    if len(actions) > 0 and obstacleIsBlocking(actions[-1], children):
+      origPosition = state
+      closestPoint = (state,[])
+      closestDist = heuristic(state, problem)
+
+      # Turn left, always keep wall on right side (we could've done opposite)
+      myRight = left[actions[-1]]
+      obstacleActions = []
+      firstTime = True
+
+      while state != origPosition or firstTime:
+        firstTime = False
+        children = problem.getSuccessors(state)
+        myRight = right[myRight]
+
+        # Turn right if we can, otherwise go straight
+        while obstacleIsBlocking(myRight, children):
+          myRight = left[myRight]
+
+        obstacleActions.append(myRight)
+        state = getChildWithAction(myRight, children)
+        currDist = heuristic(state, problem)
+
+        if currDist < closestDist:
+          closestPoint = (state, obstacleActions[:])
+          closestDist = currDist
+
+      # Once we get back to original point of incidence travel back to closest point
+      state, halfwayActions = closestPoint
+      actions = actions + obstacleActions + halfwayActions
+
+    children = problem.getSuccessors(state)
+
+    for x in children:
+      child, action, cost = x
+
+      distance = towardsGoalHeuristic(state, problem, child)
+      if distance < bestDistance:
+        bestDistance = distance
+        bestAction = action
+        bestState = child
+
+    actions.append(bestAction)
+    state = bestState
+    print actions
+
 # Heuristic which gives highest value to closest direction towards goal, not a true heuristic
 def towardsGoalHeuristic(position, problem, child):
   deltaX = child[0] - position[0]
@@ -295,6 +358,7 @@ def towardsGoalHeuristic(position, problem, child):
 
   return abs(direction-goalDirection)
 
+def mLine(position, problem, child):
 
 
 # Abbreviations
