@@ -198,9 +198,15 @@ def aStarSearch(problem, heuristic=nullHeuristic):
         if not(child in visited):
           nodeStack.push(x, cost + heuristic(state, problem))
     
+def manhattanHeuristic(position, problem, info={}):
+  "The Manhattan distance heuristic for a PositionSearchProblem"
+  xy1 = position
+  xy2 = problem.goal
+  return abs(xy1[0] - xy2[0]) + abs(xy1[1] - xy2[1])
+
   
 # Implement bug algorithms HERE
-def bug1(problem, heuristic=nullHeuristic):
+def bug1(problem, heuristic=manhattanHeuristic):
   '''
     Search the node that is closest to goal until we hit obstacle
     To run: python pacman.py -l basicRobot0 -p SearchAgent -a fn=bug1,heuristic=manhattanHeuristic
@@ -268,13 +274,13 @@ def bug1(problem, heuristic=nullHeuristic):
     state = bestState
 
 
-def obstacleIsBlocking(prevAction, children):
+def obstacleIsBlocking(desiredAction, children):
   possActions = []
   for child in children:
     _, action, _ = child
     possActions.append(action)
 
-  return prevAction not in possActions
+  return desiredAction not in possActions
 
 def getChildWithAction(action, children):
   for child in children:
@@ -283,34 +289,37 @@ def getChildWithAction(action, children):
     if action is childAction:
       return state
 
-def bug2(problem, heuristic=nullHeursitic):
+'''
+  Bug2 creates an M Line that connects the starting position to the goal. It attempts to follow this
+  Line. If it hits an obstacle on its way, it follows the obstacle until it reaches a closer point on
+  the M Line. This algorithm is complete.
+'''
+def bug2(problem, heuristic=manhattanHeuristic):
   actions = []
-  state = problem.getStartState()
+  state = problem.getStartState() # Current state
   left = Directions.LEFT
   right = Directions.RIGHT
+  onMLine = makeMLine(state, problem.goal)
 
+  # Loop until we reach the goal state
   while True:
     if problem.isGoalState(state):
       return actions
 
-    bestDistance = float('Inf')
-    bestAction = Directions.STOP
-    bestState = state
-
+    bestAction = getActionOnMLine(state, onMLine, problem)
     children = problem.getSuccessors(state)
 
-    # If wall is blocking us, circumnavigate obstacle
-    if len(actions) > 0 and obstacleIsBlocking(actions[-1], children):
-      origPosition = state
-      closestPoint = (state,[])
-      closestDist = heuristic(state, problem)
+    # If wall is blocking us, wall follow obstacle until we reach a closer point on the M line
+    if obstacleIsBlocking(bestAction, children):
+      startDistance = manhattanHeuristic(state, problem)
 
       # Turn left, always keep wall on right side (we could've done opposite)
-      myRight = left[actions[-1]]
+      myRight = left[bestAction]
       obstacleActions = []
       firstTime = True
 
-      while state != origPosition or firstTime:
+      # Follow obstacle until we reach a point on the M Line that is closer than the last M Line point
+      while (not onMLine(state) or manhattanHeuristic(state, problem) >= startDistance) or firstTime:
         firstTime = False
         children = problem.getSuccessors(state)
         myRight = right[myRight]
@@ -321,32 +330,19 @@ def bug2(problem, heuristic=nullHeursitic):
 
         obstacleActions.append(myRight)
         state = getChildWithAction(myRight, children)
-        currDist = heuristic(state, problem)
 
-        if currDist < closestDist:
-          closestPoint = (state, obstacleActions[:])
-          closestDist = currDist
-
-      # Once we get back to original point of incidence travel back to closest point
-      state, halfwayActions = closestPoint
-      actions = actions + obstacleActions + halfwayActions
-
-    children = problem.getSuccessors(state)
-
-    for x in children:
-      child, action, cost = x
-
-      distance = towardsGoalHeuristic(state, problem, child)
-      if distance < bestDistance:
-        bestDistance = distance
-        bestAction = action
-        bestState = child
+      # Once we get back to MLine continue on it
+      actions = actions + obstacleActions
+      continue
 
     actions.append(bestAction)
-    state = bestState
+    state = getChildWithAction(bestAction, children)
     print actions
 
-# Heuristic which gives highest value to closest direction towards goal, not a true heuristic
+'''
+  Heuristic which gives highest value to closest direction towards goal, not a
+  true heuristic. Not proven to be inadmissable.
+'''
 def towardsGoalHeuristic(position, problem, child):
   deltaX = child[0] - position[0]
   deltaY = child[1] - position[1]
@@ -358,7 +354,61 @@ def towardsGoalHeuristic(position, problem, child):
 
   return abs(direction-goalDirection)
 
-def mLine(position, problem, child):
+
+indexToAction = [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST,
+                Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]
+
+'''
+# Given a state on the M Line, looks at the surrounding 8 squares to figure out
+# which is the next closest position to the goal on the M Line. 
+# Returns the single action to get to this desired position (or closer to it, as in the case of the diagonal squares)
+'''
+def getActionOnMLine(state, onMLine, problem):
+  children = []
+  children.append((state[0],  state[1]+1))
+  children.append((state[0],  state[1]-1))
+  children.append((state[0]+1,state[1]))
+  children.append((state[0]-1,state[1]))
+
+  children.append((state[0]+1,state[1]+1))  
+  children.append((state[0]-1,state[1]-1))
+  children.append((state[0]+1,state[1]-1))
+  children.append((state[0]-1,state[1]+1))
+
+  bestDist = float('Inf')
+  bestIndex = None
+
+  # Looks at surrounding squares and determines which is the next on the M Line
+  for i in range(len(children)):
+    if onMLine(children[i]):
+      dist = manhattanHeuristic(children[i], problem)
+      if dist < bestDist:
+        bestDist = dist
+        bestIndex = i
+  
+  if bestIndex is None:
+    return None
+  else:
+    return indexToAction[bestIndex]
+
+# Returns the function, which given a position, will determine if said location is on the M Line
+def makeMLine(start, goal):
+  deltaX = float(goal[0] - start[0])
+  deltaY = float(goal[1] - start[1])
+  print "DeltaX", deltaX
+  print "DeltaY", deltaY
+
+  def onMLine(position):
+
+    desiredY = int(round(deltaY/deltaX * (position[0]-start[0]) + start[1]))
+    print position, desiredY
+
+    if position[1] == desiredY:
+      return True
+    else:
+      return False
+
+  return onMLine
 
 
 # Abbreviations
