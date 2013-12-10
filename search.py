@@ -266,7 +266,6 @@ def bug1(problem, heuristic=nullHeuristic):
 
     actions.append(bestAction)
     state = bestState
-    print actions
 
 
 def obstacleIsBlocking(prevAction, children):
